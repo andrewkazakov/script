@@ -1,0 +1,17 @@
+    $connectionString = "Data Source=ip:1521/db;User Id=user;Password=password;Integrated Security=no"
+    $queryString =     "select * from OTR_MON.T_STP"
+
+    [System.Reflection.Assembly]::LoadWithPartialName("System.Data.OracleClient") | Out-Null
+    $connection = New-Object System.Data.OracleClient.OracleConnection($connectionString)
+    $command = new-Object System.Data.OracleClient.OracleCommand($queryString, $connection)
+    $connection.Open()
+    $users = $command.ExecuteReader()
+    $Counter = $users.FieldCount
+
+    while ($users.Read()) {
+         for ($i = 0; $i -lt $Counter; $i++) {
+              @{ $users.GetName($i) = $users.GetValue($i); }
+        }
+    }
+
+    $connection.Close()
