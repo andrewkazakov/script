@@ -1,0 +1,48 @@
+$pwd1 = $server.pass
+$pwd = ConvertTo-SecureString $pwd1 -AsPlainText -Force
+$Credential = New-Object System.Management.Automation.PSCredential $user, $pwd
+
+# Собираем данные по пользователям в группах Администраторы, Пользователи удаленного рабочего стола
+
+Invoke-Command -ComputerName $server.server -Credential $Credential -ScriptBlock {$obj_group = [ADSI]"WinNT://localhost/Administrators,group"
+$members= @($obj_group.psbase.Invoke("Members")) | foreach{([ADSI]$_).InvokeGet("Name")}
+Write-Output "Текущие локальные администраторы: $members"} > C:\Scripts\logs\$MakeFolder\Admins.log
+Invoke-Command -ComputerName $server.server -Credential $Credential -ScriptBlock {$obj_group = [ADSI]"WinNT://localhost/Remote Desktop Users,group"
+$members= @($obj_group.psbase.Invoke("Members")) | foreach{([ADSI]$_).InvokeGet("Name")}
+Write-Output "Текущие пользователи удаленного рабочего стола: $members"} > C:\Scripts\logs\$MakeFolder\RDPUsers.log
+
+# Собираем данные аудита 
+
+$excel = New-Object -ComObject Excel.Application
+$excel.Visible = $true
+$workbook = $excel.Workbooks.Add()
+
+    $log = Invoke-Command -ComputerName $server.server -ScriptBlock{Get-EventLog -LogName Security | Where-Object {($_.EventID -eq 4624) -and (($_.ReplacementStrings[8] -eq 2) -or ($_.ReplacementStrings[8] -eq 10)) -and ($_.TimeGenerated -ge $date)}} -Credential $Credential   
+    $sheet = $workbook.Worksheets.Add()
+    $sheet.Name = $server.server
+    $counter = 0
+    $log | ForEach-Object{$counter++
+        $sheet.cells.Item($counter,1) = $_.replacementstrings[11]
+        $sheet.cells.Item($counter,2) = $_.replacementstrings[18]
+        $sheet.cells.Item($counter,3) = $_.replacementstrings[5]
+        $sheet.cells.Item($counter,4) = $_.timegenerated
+
+}
+$system = $server.name
+$filename = "c:\Scripts\logs\$MakeFolder\security_"+$system+"_"+$date+".xlsx"
+$excel.ActiveWorkbook.SaveAs($filename)
+$excel.Quit()
+Write-Host "Данные аудита сохранены в файл c:\Scripts\logs"$MakeFolder"\security_"$system"_"$date".xlsx"
+
+# Собираем данные по обновлениям 
+#Write-Host "Начали в " -NoNewline
+#Get-Date | Write-Host
+#Invoke-Command -ComputerName $server.server -Credential $Credential -ScriptBlock {Import-Module PSWindowsUpdate} 
+#Invoke-Command -ComputerName $server.server -Credential $Credential -ScriptBlock {Get-WUInstall -WindowsUpdate -ListOnly} > C:\Scripts\logs\$MakeFolder\updates.log
+Write-Host "Закончили в " -NoNewline
+Get-Date | Write-Host
+Write-Host "Данные по обновлениям сохранены в файл c:\Scripts\logs"$MakeFolder"\updates.log"
+}
+
+# Готово!
+Write-Host "Done!"
