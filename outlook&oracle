@@ -21,9 +21,13 @@ namespace Outlook
             {
                 try
                 {
+
                     conn.ConnectionString = constr;
                     conn.Open();
-                    Console.Write("Введите ID сервиса \n");
+                    Console.Write("Введите ID сбойного сервиса \n"+
+                        "Для Сервисный концентратор ФМС - 1 \n"+
+                        "Для Электронный сервис предоставления информации о санитарно-эпидемиологических заключениях - 2 \n"+
+                        "Для сервис ОАТИ по предоставлению сведений в Базовый регистр - 3 \n");
                     string servicename = Console.ReadLine();
                     string cmdQuery = "select * from OTR_MON.T_STP where STP_ID = "+servicename;
                     Console.Write(cmdQuery);
@@ -52,7 +56,9 @@ namespace Outlook
                         mailItem.To = email;
                         string service = (string)reader.GetValue(1);
                         mailItem.Subject = "Ошибка сервиса "+service;
-                        mailItem.HTMLBody = "<p>Обнаружены ошибки в работе сервиса "+service+"</p>"+ "<p>Адрес в РСМЭВ "+"какой-то хттп</p>"+ "Адрес в СМЭВ "+"еще какой-то хттп"+ "<p style='color: red'>SMEV-101007: При обработке запроса возникла ошибка: Внешний сервис поставщика временно недоступен</p>";
+                        mailItem.HTMLBody = "<p>Обнаружены ошибки в работе сервиса "+service+"</p>"+ 
+                            "<p>Адрес в РСМЭВ "+"какой-то хттп</p>"+ "Адрес в СМЭВ "+"еще какой-то хттп"+ 
+                            "<p style='color: red'>SMEV-101007: При обработке запроса возникла ошибка: Внешний сервис поставщика временно недоступен</p>";
                         mailItem.Attachments.Add("C:\\Temp\\cert.csv");
                         mailItem.Importance = Outlook2.OlImportance.olImportanceLow;
                         mailItem.Display();
@@ -78,3 +84,4 @@ namespace Outlook
         }
     }
 }
+
