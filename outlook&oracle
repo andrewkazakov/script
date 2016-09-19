@@ -1,0 +1,80 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using Microsoft.Office.Interop;
+using Outlook2 = Microsoft.Office.Interop.Outlook;
+using System.Diagnostics;
+using Oracle.ManagedDataAccess.Client;
+using System.Data;
+
+namespace Outlook
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            string constr = "User Id=otr_mon; Password=OTR_MON; Data Source=10.126.180.82:1521/stisur;";
+            string ProviderName = "Oracle.ManagedDataAccess.Client";
+
+            using (OracleConnection conn = new OracleConnection(constr))
+            {
+                try
+                {
+                    conn.ConnectionString = constr;
+                    conn.Open();
+                    Console.Write("Введите ID сервиса \n");
+                    string servicename = Console.ReadLine();
+                    string cmdQuery = "select * from OTR_MON.T_STP where STP_ID = "+servicename;
+                    Console.Write(cmdQuery);
+                    //Console.ReadKey();
+
+                    // Create the OracleCommand
+                    OracleCommand cmd = new OracleCommand(cmdQuery);
+
+                    cmd.Connection = conn;
+                    cmd.CommandType = CommandType.Text;
+
+                    // Execute command, create OracleDataReader object
+                    OracleDataReader reader = cmd.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        // output Employee Name and Number
+                        //Console.WriteLine("STP Name : " + reader.GetValue(2));
+                        //+ " , " +
+                        //  "Employee Number : " + reader.GetString(4));
+                        object missingValue = System.Reflection.Missing.Value;
+                        var oApp = new Outlook2.Application();
+                        var mailItem = oApp.CreateItem(Microsoft.Office.Interop.Outlook.OlItemType.olMailItem) as Microsoft.Office.Interop.Outlook.MailItem;
+                        mailItem.SentOnBehalfOfName = "asur_request@otr.ru";
+                        string email = (string)reader.GetValue(2);
+                        mailItem.To = email;
+                        string service = (string)reader.GetValue(1);
+                        mailItem.Subject = "Ошибка сервиса "+service;
+                        mailItem.HTMLBody = "<p>Обнаружены ошибки в работе сервиса "+service+"</p>"+ "<p>Адрес в РСМЭВ "+"какой-то хттп</p>"+ "Адрес в СМЭВ "+"еще какой-то хттп"+ "<p style='color: red'>SMEV-101007: При обработке запроса возникла ошибка: Внешний сервис поставщика временно недоступен</p>";
+                        mailItem.Attachments.Add("C:\\Temp\\cert.csv");
+                        mailItem.Importance = Outlook2.OlImportance.olImportanceLow;
+                        mailItem.Display();
+                        break;
+                    }
+
+                    // Clean up
+                    reader.Dispose();
+                    cmd.Dispose();
+                    conn.Dispose();
+                    //Console.ReadKey();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.StackTrace);
+                    Console.ReadKey();
+                }
+            }
+
+
+
+        }
+    }
+}
