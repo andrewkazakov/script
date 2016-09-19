@@ -14,7 +14,7 @@ namespace Outlook
     {
         static void Main(string[] args)
         {
-            string constr = "User Id=otr_mon; Password=OTR_MON; Data Source=10.126.180.82:1521/stisur;";
+            string constr = "User Id=username; Password=P@ssw0rd; Data Source=192.168.0.1:1521/SID;";
             string ProviderName = "Oracle.ManagedDataAccess.Client";
 
             using (OracleConnection conn = new OracleConnection(constr))
